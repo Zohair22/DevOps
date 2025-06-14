@@ -1,7 +1,18 @@
 #!/bin/bash
 
-read -p "Commit message: " msg
+echo "🔧 Git Automation Script"
+read -p "Enter commit message: " msg
+
+echo "📥 Pulling latest changes..."
+git pull
+
+echo "📂 Adding changes..."
 git add .
+
+echo "✅ Committing..."
 git commit -m "$msg"
-branch=$(git rev-parse --abbrev-ref HEAD)
-git push origin $branch
+
+echo "📤 Pushing..."
+git push
+
+echo "🎉 Done!"

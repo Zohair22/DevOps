@@ -12,3 +12,13 @@ jobs:
 
     - name: Say Hello
       run: echo "👋 Hello from GitHub Actions!"
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Run a test script
+      run: |
+        echo "console.log('✅ Node.js is ready!')" > app.js
+        node app.js
