@@ -2,6 +2,11 @@ name: 🚀 Deploy to Production
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Type deploy-prod to continue"
+        required: true
+        default: "deploy-prod"
 
 jobs:
   deploy-prod:
