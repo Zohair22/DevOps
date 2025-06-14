@@ -4,19 +4,19 @@ on:
   push:
     branches: [dev, master]
   pull_request:
-  workflow_dispatch:  # 👈 Enables manual trigger button
+  workflow_dispatch:  # Enables manual trigger for merge/setup
 
 jobs:
   dev:
     name: Run Dev
+    if: github.ref == 'refs/heads/dev'  # ✅ Only on dev branch
     runs-on: ubuntu-latest
     env:
-      ENV_NAME: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+      ENV_NAME: dev
 
     strategy:
       matrix:
         python-version: ["3.12"]
-
 
     steps:
       - name: Checkout code
@@ -34,7 +34,6 @@ jobs:
 
       - name: Install dependencies & run tests with coverage
         run: |
-          echo "Environment: $ENV_NAME"
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pytest --cov=maths --cov-report=term --cov-report=xml
@@ -48,11 +47,12 @@ jobs:
 
   merge-to-master:
     name: Manual Merge to Master
-    if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'  # ✅ Manual trigger only
     needs: dev
+    runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout master
         uses: actions/checkout@v4
@@ -72,11 +72,13 @@ jobs:
           git merge origin/dev --no-edit
           git push origin master
 
-  setup-after-merge:
+  run-prod:
     name: Run Production
+    if: github.event_name == 'workflow_dispatch'  # ✅ Manual trigger only
+    needs: merge-to-master
     runs-on: ubuntu-latest
     env:
-      ENV_NAME: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+      ENV_NAME: prod
 
     strategy:
       matrix:
@@ -98,7 +100,6 @@ jobs:
 
       - name: Install dependencies & run tests with coverage
         run: |
-          echo "Environment: $ENV_NAME"
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pytest --cov=maths --cov-report=term --cov-report=xml
