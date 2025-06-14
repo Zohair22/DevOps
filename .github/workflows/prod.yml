@@ -30,8 +30,7 @@ jobs:
 
       - name: Load environment file
         run: |
-          echo "Using environment: $ENV_NAME"
-          cp .env.$ENV_NAME .env
+          cp .env.prod .env
 
       - name: Install dependencies & run tests with coverage
         run: |
