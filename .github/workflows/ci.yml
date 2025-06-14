@@ -22,6 +22,3 @@ jobs:
         pip install pytest
         pytest
       shell: bash
-
-    - name: Run tests
-      run: pytest
