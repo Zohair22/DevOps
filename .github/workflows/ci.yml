@@ -1,6 +1,10 @@
 name: Python Matrix CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+  workflow_dispatch:  # 👈 Enables the "Run workflow" button in the Actions tab
 
 jobs:
   dev:
@@ -16,7 +20,7 @@ jobs:
 
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
 
-    steps:  # ✅ All steps must be inside here
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -43,3 +47,29 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           flags: ${{ matrix.os }}-${{ matrix.python-version }}-${{ env.ENV_NAME }}
+
+  merge-to-master:
+    name: Manual Merge to Master
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    needs: dev
+    permissions:
+      contents: write  # 👈 Required to push/merge
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge dev into master
+        run: |
+          git fetch origin dev
+          git merge origin/dev --no-edit
+          git push origin master
