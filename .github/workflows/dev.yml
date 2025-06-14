@@ -3,7 +3,7 @@ name: 🚀 Deploy to Dev
 on:
   push:
     branches: [dev]
-  workflow_dispatch:  # This enables manual trigger via UI
+  workflow_dispatch:
 
 jobs:
   deploy-dev:
