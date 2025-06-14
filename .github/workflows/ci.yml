@@ -27,9 +27,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pytest --cov=maths --cov-report=term --cov-report=xml
-          - name: Upload coverage to Codecov
-          uses: codecov/codecov-action@v4
-          with:
-            token: "0484744d-8ef7-4e29-bb22-520fce88dd55"
-            files: ./coverage.xml
-            flags: ${{ matrix.os }}-${{ matrix.python-version }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: ${{ matrix.os }}-${{ matrix.python-version }}
