@@ -2,11 +2,11 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [dev]
-  workflow_dispatch:  # Manual triggers for merge and prod deploy
+    branches: [dev, master]
+  workflow_dispatch:
     inputs:
       action:
-        description: "What do you want to do?"
+        description: "Select a manual operation"
         required: true
         default: "merge"
         type: choice
@@ -14,21 +14,18 @@ on:
           - merge
           - deploy-prod
 
-
 jobs:
   deploy-dev:
     name: 🚀 Deploy to Dev (Auto)
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     env:
-      ENV_NAME: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+      ENV_NAME: dev
     strategy:
       matrix:
         python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -37,12 +34,10 @@ jobs:
 
       - name: Load environment file
         run: |
-          echo "Using environment: $ENV_NAME"
-          cp .env.$ENV_NAME .env
+          cp .env.dev .env
 
       - name: Install dependencies & run tests with coverage
         run: |
-          echo "Environment: $ENV_NAME"
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pytest --cov=maths --cov-report=term --cov-report=xml
@@ -52,22 +47,24 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          flags: ${{ matrix.python-version }}-${{ env.ENV_NAME }}
+          flags: dev-${{ matrix.python-version }}
 
   merge-dev-to-master:
     name: 🔁 Merge Dev → Master (Manual)
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'merge' }}
-    needs: deploy-dev
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout master
+        uses: actions/checkout@v4
         with:
           ref: master
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
+
+      - name: Merge dev → master
+        run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git fetch origin dev
@@ -75,19 +72,18 @@ jobs:
           git push origin master
 
   deploy-prod:
-    name: 🚀 Deploy to Prod (Master - Manual)
+    name: 🚀 Deploy to Prod (Manual)
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy-prod' }}
-    needs: merge-dev-to-master
     runs-on: ubuntu-latest
     env:
-      ENV_NAME: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+      ENV_NAME: prod
     strategy:
       matrix:
         python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: master
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -96,12 +92,10 @@ jobs:
 
       - name: Load environment file
         run: |
-          echo "Using environment: $ENV_NAME"
-          cp .env.$ENV_NAME .env
+          cp .env.prod .env
 
       - name: Install dependencies & run tests with coverage
         run: |
-          echo "Environment: $ENV_NAME"
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
           pytest --cov=maths --cov-report=term --cov-report=xml
@@ -111,4 +105,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          flags: ${{ matrix.python-version }}-${{ env.ENV_NAME }}
+          flags: prod-${{ matrix.python-version }}
