@@ -2,46 +2,36 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [dev, master]
-  pull_request:
-  workflow_dispatch:  # Allows manual trigger with inputs
+    branches: [dev]
+  workflow_dispatch:  # Manual triggers for merge and prod deploy
     inputs:
       action:
         description: "What do you want to do?"
         required: true
-        default: "deploy-dev"
+        default: "merge"
         type: choice
         options:
-          - deploy-dev
-          - deploy-prod
           - merge
+          - deploy-prod
 
 jobs:
-  dev-tests:
-    name: Run Dev Tests
+  deploy-dev:
+    name: 🚀 Deploy to Dev (Auto)
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
-    env:
-      ENV_NAME: dev
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          ref: dev
       - run: |
-          echo "Using environment: $ENV_NAME"
-          cp .env.dev .env
-          pip install -U pip pytest pytest-cov
-          pytest --cov=maths --cov-report=term --cov-report=xml
-      - uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: dev
+          echo "🚀 Deploying to Dev Server"
+          chmod +x ./deploy-to.sh
+          ./deploy-to.sh dev
 
   merge-dev-to-master:
-    name: Merge dev → master
-    if: github.event_name == 'workflow_dispatch'
+    name: 🔁 Merge Dev → Master (Manual)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'merge' }}
+    needs: deploy-dev
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -58,22 +48,10 @@ jobs:
           git merge origin/dev --no-edit
           git push origin master
 
-  deploy-dev:
-    name: Deploy to Dev
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: dev
-      - run: |
-          echo "🚀 Deploying to Dev Server"
-          chmod +x ./deploy-to.sh
-          ./deploy-to.sh dev
-
   deploy-prod:
-    name: Deploy to Prod (master)
-    if: github.event_name == 'workflow_dispatch'
+    name: 🚀 Deploy to Prod (Master - Manual)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy-prod' }}
+    needs: merge-dev-to-master
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
