@@ -14,11 +14,13 @@ jobs:
       with:
         python-version: '3.13.1'
 
-    - name: Install dependencies
+    - name: Set up and activate venv
       run: |
         python -m venv venv
         source venv/bin/activate
         pip install pytest
+        pytest
+      shell: bash
 
     - name: Run tests
       run: pytest
