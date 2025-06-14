@@ -14,10 +14,11 @@ jobs:
       with:
         python-version: '3.13.1'
 
-    - name: Set up and activate venv
+    - name: Set up venv, install, run tests
       run: |
         python -m venv venv
         source venv/bin/activate
+        pip install --upgrade pip
         pip install pytest
         pytest
       shell: bash
