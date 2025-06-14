@@ -1,24 +1,24 @@
-name: Hello CI
+name: Python CI
 
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Say Hello
-      run: echo "👋 Hello from GitHub Actions!"
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        node-version: '18'
+        python-version: '3.11'
 
-    - name: Run a test script
+    - name: Install dependencies
       run: |
-        echo "console.log('✅ Node.js is ready!')" > app.js
-        node app.js
+        python -m venv venv
+        source venv/bin/activate
+        pip install pytest
+
+    - name: Run tests
+      run: pytest
